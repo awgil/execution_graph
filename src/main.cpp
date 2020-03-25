@@ -1,108 +1,46 @@
-#include "execution_graph.hpp"
+#include "input.hpp"
+#include "simulation.hpp"
+#include "render.hpp"
+#include "model.hpp"
 
-class ISystem
+struct SimA : public ISimulationSubsystem
 {
-public:
-	virtual ~ISystem() = default;
-};
-
-class SystemManager
-{
-	using Systems = ExecutionGraph<float>;
-public:
-	template<typename System>
-	std::tuple<System&, tf::Task> add()
+	void operator()()
 	{
-		static_assert(std::is_base_of_v<ISystem, System>);
-		auto& system = static_cast<System&>(*mSystems.emplace_back(new System));
-		auto task = mGraph.add(std::ref(system));
-		return { system, task };
-	}
-
-	void execute(float dt)
-	{
-		mGraph.execute(mExecutor, dt);
-	}
-
-private:
-	Systems mGraph;
-	tf::Executor mExecutor;
-	std::vector<std::unique_ptr<ISystem>> mSystems;
-};
-
-class InputSystem : public ISystem
-{
-public:
-	void operator()(float dt)
-	{
-		printf("Input; %f passed since prev frame\n", dt);
+		printf("Simulation A\n");
 	}
 };
 
-class SimulationSystem : public ISystem
+struct SimB : public ISimulationSubsystem
 {
-	using Subsystems = ExecutionGraph<>;
-public:
-	template<typename Callable>
-	tf::Task addSubsystem(Callable&& c)
+	void operator()()
 	{
-		return mGraph.add(std::forward<Callable>(c));
+		printf("Simulation B\n");
 	}
-
-	void operator()(tf::Subflow& sf, float dt)
-	{
-		mRemaining += dt;
-		tf::Task prev;
-		while (mRemaining >= kFrameLength)
-		{
-			mRemaining -= kFrameLength;
-			prev = mGraph.execute_in(sf, prev, {}).second;
-		}
-	}
-
-private:
-	static constexpr float kFrameLength = 0.06f;
-	float mRemaining = 0.f;
-	Subsystems mGraph;
-};
-
-class RenderSystem : public ISystem
-{
-	using Subsystems = ExecutionGraph<float, std::string>;
-public:
-	// we assume all render subsystems can run in parallel => don't return task, since no dependencies are needed
-	template<typename Callable>
-	void addSubsystem(Callable&& c)
-	{
-		mGraph.add(c);
-	}
-
-	void operator()(tf::Subflow& sf, float dt)
-	{
-		mGraph.execute_in(sf, {}, {}, dt, "render context");
-	}
-
-private:
-	Subsystems mGraph;
 };
 
 int main()
 {
 	SystemManager sm;
 
-	auto [inputSystem, inputTask] = sm.add<InputSystem>();
-	auto [simSystem, simTask] = sm.add<SimulationSystem>();
-	auto [renderSystem, renderTask] = sm.add<RenderSystem>();
-	inputTask.precede(simTask);
-	simTask.precede(renderTask);
+	// TODO: this will be done by world loader, using vector of active system type names
+	auto& inputSystem = sm.add<InputSystem>();
+	auto& simSystem = sm.add<SimulationSystem>();
+	auto& renderSystem = sm.add<RenderSystem>();
+	auto& modelSystem = sm.add<ModelSystem>();
 
-	auto simA = simSystem.addSubsystem([]() { printf("Simulation A\n"); });
-	auto simB = simSystem.addSubsystem([]() { printf("Simulation B\n"); });
-	simA.precede(simB);
+	// TODO: this will be done by SystemManager::configure using statically-defined edges between systems
+	inputSystem.task().precede(simSystem.task());
+	simSystem.task().precede(renderSystem.task());
+	simSystem.task().precede(modelSystem.task());
+	modelSystem.task().precede(renderSystem.task());
 
-	renderSystem.addSubsystem([](float, const std::string& msg) { printf("Render A: %s\n", msg.c_str()); });
-	renderSystem.addSubsystem([](float, const std::string& msg) { printf("Render B: %s\n", msg.c_str()); });
-	renderSystem.addSubsystem([](float, const std::string& msg) { printf("Render C: %s\n", msg.c_str()); });
+	// TODO: this will be done by SimulationSystem::configure using data in singleton component describing game simulation settings
+	auto& simA = simSystem.add<SimA>();
+	auto& simB = simSystem.add<SimB>();
+	simA.task().precede(simB.task());
+
+	sm.configure();
 
 	sm.execute(0.1f); // 1 tick + 0.04
 	sm.execute(0.1f); // 2 ticks + 0.02

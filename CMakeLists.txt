@@ -15,7 +15,7 @@ add_compile_options(
 	/WX							# Enable warnings as errors
 	/Gy							# Enable function level linking
 	/Gw							# Optimize Global Data
-	/GR-						# Disable Run-Time Type Information
+	#/GR-						# Disable Run-Time Type Information
 	/GS-						# Disable Security Check
 	/bigobj						# Increase number of sections in object files
 	/Oi							# Enable intrinsics
