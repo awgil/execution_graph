@@ -68,20 +68,18 @@ class ExecutionGraph : private TaskflowWithArgs<Args...>
 	static_assert(std::is_base_of_v<ExecutionGraphElement, Base>);
 
 public:
-	template<typename Element, typename... CtorArgs>
-	Element& add(CtorArgs &&... ctorArgs)
-	{
-		static_assert(std::is_base_of_v<Base, Element>);
-		auto& element = static_cast<Element&>(*mElements.emplace_back(new Element(std::forward<CtorArgs>(ctorArgs)...)));
-		element.mTask = TaskflowWithArgs<Args...>::add(std::ref(element));
-		return element;
-	}
-
 	Base& add(std::unique_ptr<Base>&& elem)
 	{
 		auto& element = *mElements.emplace_back(std::move(elem));
 		element.mTask = TaskflowWithArgs<Args...>::add(std::ref(element));
 		return element;
+	}
+
+	template<typename Element, typename... CtorArgs>
+	Element& add(CtorArgs &&... ctorArgs)
+	{
+		static_assert(std::is_base_of_v<Base, Element>);
+		return static_cast<Element&>(add(std::make_unique<Element>(std::forward<CtorArgs>(ctorArgs)...)));
 	}
 
 	using TaskflowWithArgs<Args...>::execute;

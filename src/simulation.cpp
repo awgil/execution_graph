@@ -7,7 +7,7 @@ void SimulationSystem::configure()
 	// then use RTTR db to add edges between active subsystems
 }
 
-void SimulationSystem::operator()(tf::Subflow& sf, float dt)
+void SimulationSystem::execute(tf::Subflow& sf, float dt)
 {
 	mRemaining += dt;
 	tf::Task prev;

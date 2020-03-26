@@ -8,15 +8,15 @@ void ModelSystem::configure()
 	assert(batcher);
 
 	// this is the same style of registration as used currently by corex
-	batcher->add<ModelRenderer>();
+	batcher->addSubsystem<ModelRenderer>();
 }
 
-void ModelSystem::operator()(float dt)
+void ModelSystem::execute(tf::Subflow&, float dt)
 {
 	printf("Updating model transforms, %f passed...\n", dt);
 }
 
-void ModelRenderer::operator()(BatchRenderer& batcher)
+void ModelRenderer::prepBatch(BatchRenderer& batcher)
 {
 	printf("Preparing model batches\n");
 	// below is just an example...

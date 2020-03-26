@@ -1,6 +1,6 @@
 #include "input.hpp"
 
-void InputSystem::operator()(float dt)
+void InputSystem::execute(tf::Subflow&, float dt)
 {
 	printf("Input; %f passed since prev frame\n", dt);
 }

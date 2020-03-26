@@ -1,6 +1,6 @@
 #include "render.hpp"
 
-void BatchRenderer::operator()(tf::Subflow& sf, float, const RenderContext&)
+void BatchRenderer::render(tf::Subflow& sf, float, const RenderContext&)
 {
 	// first let all registered subsystems fill their batches
 	auto [A, B] = mGraph.execute(sf, *this);
@@ -32,7 +32,7 @@ void RenderSystem::configure()
 	add<BatchRenderer>();
 }
 
-void RenderSystem::operator()(tf::Subflow& sf, float dt)
+void RenderSystem::execute(tf::Subflow& sf, float dt)
 {
 	mGraph.execute(sf, dt, RenderContext{ "render context" });
 }

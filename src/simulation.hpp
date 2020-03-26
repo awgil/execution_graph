@@ -4,7 +4,10 @@
 
 class ISimulationSubsystem : public ExecutionGraphElement
 {
-	//void operator()();
+public:
+	virtual void simulateFrame() = 0;
+
+	void operator()() { simulateFrame(); }
 };
 
 class SimulationSystem : public ISystem
@@ -20,7 +23,7 @@ public:
 	}
 
 	void configure() override;
-	void operator()(tf::Subflow& sf, float dt);
+	void execute(tf::Subflow& sf, float dt) override;
 
 private:
 	static constexpr float kFrameLength = 0.06f;

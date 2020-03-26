@@ -8,5 +8,5 @@ class InputSystem : public ISystem
 public:
 	using ISystem::ISystem;
 
-	void operator()(float dt);
+	void execute(tf::Subflow& sf, float dt) override;
 };

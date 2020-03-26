@@ -5,7 +5,7 @@
 
 struct SimA : public ISimulationSubsystem
 {
-	void operator()()
+	void simulateFrame() override
 	{
 		printf("Simulation A\n");
 	}
@@ -13,7 +13,7 @@ struct SimA : public ISimulationSubsystem
 
 struct SimB : public ISimulationSubsystem
 {
-	void operator()()
+	void simulateFrame() override
 	{
 		printf("Simulation B\n");
 	}
@@ -21,7 +21,7 @@ struct SimB : public ISimulationSubsystem
 
 struct CustomRenderer : public IBatcherSubsystem
 {
-	void operator()(BatchRenderer& batcher)
+	void prepBatch(BatchRenderer& batcher) override
 	{
 		batcher.addBatch(*this, 3, 30);
 	}
@@ -58,7 +58,7 @@ int main()
 	sm.configure();
 
 	// TODO: this will be done by somesystem::configure
-	renderSystem.find<BatchRenderer>()->add<CustomRenderer>();
+	renderSystem.find<BatchRenderer>()->addSubsystem<CustomRenderer>();
 
 	sm.execute(0.1f); // 1 tick + 0.04
 	sm.execute(0.1f); // 2 ticks + 0.02

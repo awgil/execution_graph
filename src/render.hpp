@@ -3,6 +3,7 @@
 #include "system_manager.hpp"
 
 class IBatcherSubsystem;
+class BatchRenderer;
 
 struct Batch
 {
@@ -19,28 +20,33 @@ struct RenderContext
 
 class IRenderSubsystem : public ExecutionGraphElement
 {
-	//void operator()(float dt, const RenderContext& ctx);
+public:
+	virtual void render(tf::Subflow& sf, float dt, const RenderContext& ctx) = 0;
+
+	void operator()(tf::Subflow& sf, float dt, const RenderContext& ctx) { render(sf, dt, ctx); }
 };
 
 class IBatcherSubsystem : public ExecutionGraphElement
 {
 public:
-	//void operator()(BatchRenderer& batcher);
+	virtual void prepBatch(BatchRenderer& batcher) = 0;
 	virtual void evalBatch(BatchIter begin, BatchIter end) = 0;
+
+	void operator()(BatchRenderer& batcher) { prepBatch(batcher); }
 };
 
 class BatchRenderer : public IRenderSubsystem
 {
 public:
 	template<typename Subsystem>
-	void add()
+	void addSubsystem()
 	{
 		mGraph.add<Subsystem>();
 	}
 
-	void operator()(tf::Subflow& sf, float dt, const RenderContext& ctx);
-
 	void addBatch(IBatcherSubsystem& subsystem, int key, int data);
+
+	void render(tf::Subflow& sf, float dt, const RenderContext& ctx) override;
 
 private:
 	ExecutionGraph<IBatcherSubsystem, std::reference_wrapper<BatchRenderer>> mGraph;
@@ -60,7 +66,7 @@ public:
 	}
 
 	void configure() override;
-	void operator()(tf::Subflow& sf, float dt);
+	void execute(tf::Subflow& sf, float dt) override;
 
 	template<typename Subsystem>
 	Subsystem* find()

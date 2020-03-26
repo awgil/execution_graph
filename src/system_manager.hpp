@@ -10,8 +10,9 @@ public:
 	ISystem(SystemManager& mgr) : mMgr(mgr) {}
 
 	virtual void configure() {}
+	virtual void execute(tf::Subflow& sf, float dt) = 0;
 
-	//void operator()(float dt);
+	void operator()(tf::Subflow& sf, float dt) { execute(sf, dt); }
 
 protected:
 	SystemManager& mMgr;
