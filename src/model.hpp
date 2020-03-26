@@ -10,8 +10,9 @@ public:
 	void operator()(float dt);
 };
 
-class ModelRenderer : public IRenderSubsystem
+class ModelRenderer : public IBatcherSubsystem
 {
 public:
-	void operator()(float dt, const RenderContext& ctx);
+	void operator()(BatchRenderer& batcher);
+	void evalBatch(BatchIter begin, BatchIter end) override;
 };

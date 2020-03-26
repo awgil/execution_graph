@@ -46,15 +46,7 @@ public:
 	template<typename System>
 	System* find()
 	{
-		// this should of course use RTTR and fast lookups...
-		for (auto& e : mGraph.elements())
-		{
-			if (auto* cast = dynamic_cast<System*>(e.get()))
-			{
-				return cast;
-			}
-		}
-		return nullptr;
+		return mGraph.findElementByType<System>();
 	}
 
 private:

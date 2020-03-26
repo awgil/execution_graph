@@ -19,6 +19,21 @@ struct SimB : public ISimulationSubsystem
 	}
 };
 
+struct CustomRenderer : public IBatcherSubsystem
+{
+	void operator()(BatchRenderer& batcher)
+	{
+		batcher.addBatch(*this, 3, 30);
+	}
+
+	void evalBatch(BatchIter begin, BatchIter end) override
+	{
+		printf("Rendering custom:\n");
+		for (auto i = begin; i != end; ++i)
+			printf("- element %d\n", i->data);
+	}
+};
+
 int main()
 {
 	SystemManager sm;
@@ -41,6 +56,9 @@ int main()
 	simA.task().precede(simB.task());
 
 	sm.configure();
+
+	// TODO: this will be done by somesystem::configure
+	renderSystem.find<BatchRenderer>()->add<CustomRenderer>();
 
 	sm.execute(0.1f); // 1 tick + 0.04
 	sm.execute(0.1f); // 2 ticks + 0.02

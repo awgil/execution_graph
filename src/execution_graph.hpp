@@ -88,6 +88,20 @@ public:
 
 	auto& elements() { return mElements; }
 
+	template<typename Element>
+	Element* findElementByType()
+	{
+		// this should of course use RTTR and fast lookups...
+		for (auto& e : mElements)
+		{
+			if (auto* cast = dynamic_cast<Element*>(e.get()))
+			{
+				return cast;
+			}
+		}
+		return nullptr;
+	}
+
 private:
 	std::vector<std::unique_ptr<Base>> mElements;
 };
