@@ -3,11 +3,10 @@
 #include "system_manager.hpp"
 
 // this is an example of a simple system
-class InputSystem : public ISystem
+class InputSystem : public System<InputSystem>
 {
-	RTTR_ENABLE(ISystem);
 public:
-	using ISystem::ISystem;
+	using System::System;
 
 	void execute(tf::Subflow& sf, float dt) override;
 };

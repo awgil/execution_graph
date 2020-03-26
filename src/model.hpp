@@ -2,11 +2,10 @@
 
 #include "render.hpp"
 
-class ModelSystem : public ISystem
+class ModelSystem : public System<ModelSystem>
 {
-	RTTR_ENABLE(ISystem);
 public:
-	using ISystem::ISystem;
+	using System::System;
 	void configure() override;
 	void execute(tf::Subflow& sf, float dt) override;
 };

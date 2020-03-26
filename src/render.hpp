@@ -58,9 +58,8 @@ private:
 	std::vector<Batch> mBatches;
 };
 
-class RenderSystem : public ISystem
+class RenderSystem : public System<RenderSystem>
 {
-	RTTR_ENABLE(ISystem);
 public:
 	RenderSystem(SystemManager& mgr);
 

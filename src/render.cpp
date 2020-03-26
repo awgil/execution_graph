@@ -44,7 +44,7 @@ void BatchRenderer::render(tf::Subflow& sf, float, const RenderContext&)
 }
 
 RenderSystem::RenderSystem(SystemManager& mgr)
-	: ISystem(mgr)
+	: System(mgr)
 {
 	add<BatchRenderer>();
 }

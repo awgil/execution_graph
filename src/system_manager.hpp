@@ -19,6 +19,17 @@ protected:
 	SystemManager& mMgr;
 };
 
+template<typename T>
+struct System : ISystem
+{
+	using ISystem::ISystem;
+
+	auto& self() { return static_cast<T&>(*this); }
+	auto& self() const { return static_cast<const T&>(*this); }
+
+	RTTR_CRTP_ENABLE(ISystem);
+};
+
 class SystemManager
 {
 public:

@@ -10,11 +10,10 @@ public:
 	virtual void simulateFrame() = 0;
 };
 
-class SimulationSystem : public ISystem
+class SimulationSystem : public System<SimulationSystem>
 {
-	RTTR_ENABLE(ISystem);
 public:
-	using ISystem::ISystem;
+	using System::System;
 
 	// TODO: should be called inside configure?
 	template<typename Subsystem>
