@@ -1,5 +1,10 @@
 #include "render.hpp"
 
+void BatchRenderer::renderInit(const RenderContext& ctx)
+{
+	printf("Batcher init: %s\n", ctx.mSomething.c_str());
+}
+
 void BatchRenderer::render(tf::Subflow& sf, float, const RenderContext&)
 {
 	// first let all registered subsystems fill their batches
@@ -34,7 +39,9 @@ void RenderSystem::configure()
 
 void RenderSystem::execute(tf::Subflow& sf, float dt)
 {
-	mGraph.execute(sf, dt, RenderContext{ "render context" });
+	auto [A, B] = mInitGraph.execute(sf, RenderContext{ "init context" });
+	auto [C, D] = mRenderGraph.execute(sf, dt, RenderContext{ "render context" });
+	C.succeed(B);
 }
 
 // TODO: RTTR registration, edges defined here...

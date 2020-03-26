@@ -21,6 +21,7 @@ struct RenderContext
 class IRenderSubsystem : public ExecutionGraphElement
 {
 public:
+	virtual void renderInit(const RenderContext& ctx) = 0;
 	virtual void render(tf::Subflow& sf, float dt, const RenderContext& ctx) = 0;
 
 	void operator()(tf::Subflow& sf, float dt, const RenderContext& ctx) { render(sf, dt, ctx); }
@@ -46,6 +47,7 @@ public:
 
 	void addBatch(IBatcherSubsystem& subsystem, int key, int data);
 
+	void renderInit(const RenderContext& ctx) override;
 	void render(tf::Subflow& sf, float dt, const RenderContext& ctx) override;
 
 private:
@@ -62,7 +64,8 @@ public:
 	template<typename Subsystem>
 	void add()
 	{
-		mGraph.add<Subsystem>();
+		auto& subsys = mRenderGraph.add<Subsystem>();
+		mInitGraph.add([&subsys](const RenderContext& ctx) { subsys.renderInit(ctx); });
 	}
 
 	void configure() override;
@@ -71,9 +74,10 @@ public:
 	template<typename Subsystem>
 	Subsystem* find()
 	{
-		return mGraph.findElementByType<Subsystem>();
+		return mRenderGraph.findElementByType<Subsystem>();
 	}
 
 private:
-	ExecutionGraph<IRenderSubsystem, float, RenderContext> mGraph;
+	TaskflowWithArgs<RenderContext> mInitGraph;
+	ExecutionGraph<IRenderSubsystem, float, RenderContext> mRenderGraph;
 };
