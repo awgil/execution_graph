@@ -1,18 +1,19 @@
 #pragma once
 
 #include "execution_graph.hpp"
+#include <rttr/rttr_enable.h>
 
 class SystemManager;
 
-class ISystem : public ExecutionGraphElement
+class ISystem
 {
+	RTTR_ENABLE();
 public:
 	ISystem(SystemManager& mgr) : mMgr(mgr) {}
+	virtual ~ISystem() = default;
 
 	virtual void configure() {}
 	virtual void execute(tf::Subflow& sf, float dt) = 0;
-
-	void operator()(tf::Subflow& sf, float dt) { execute(sf, dt); }
 
 protected:
 	SystemManager& mMgr;
@@ -27,13 +28,14 @@ public:
 	template<typename System>
 	System& add()
 	{
-		return mGraph.add<System>(*this);
+		return mSystems.add<System>(*this);
 	}
 
 	void configure()
 	{
-		// TODO: use metadata from RTTR db to configure edges between systems
-		for (auto& system : mGraph.elements())
+		mSystems.buildTaskflow(mGraph, &ISystem::execute);
+
+		for (auto& system : mSystems.functors())
 		{
 			system->configure();
 		}
@@ -47,10 +49,11 @@ public:
 	template<typename System>
 	System* find()
 	{
-		return mGraph.findElementByType<System>();
+		return mSystems.findByType<System>();
 	}
 
 private:
+	FunctorList<ISystem> mSystems;
 	tf::Executor mExecutor;
-	ExecutionGraph<ISystem, float> mGraph;
+	TaskflowWithArgs<float> mGraph;
 };

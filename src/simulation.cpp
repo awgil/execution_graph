@@ -4,7 +4,7 @@ void SimulationSystem::configure()
 {
 	printf("Sim configure\n");
 	// TODO: look up singleton component describing simulation settings, use vector of sim subsystem types to add nodes
-	// then use RTTR db to add edges between active subsystems
+	mSubsystems.buildTaskflow(mGraph, &ISimulationSubsystem::simulateFrame);
 }
 
 void SimulationSystem::execute(tf::Subflow& sf, float dt)
@@ -21,4 +21,9 @@ void SimulationSystem::execute(tf::Subflow& sf, float dt)
 	}
 }
 
-// TODO: RTTR registration, edges defined here...
+RTTR_REGISTRATION
+{
+	FunctorRegistration<SimulationSystem>("SimulationSystem")
+		.runAfer("InputSystem")
+		.runBefore("ModelSystem", "RenderSystem");
+}

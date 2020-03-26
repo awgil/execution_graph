@@ -5,4 +5,7 @@ void InputSystem::execute(tf::Subflow&, float dt)
 	printf("Input; %f passed since prev frame\n", dt);
 }
 
-// TODO: RTTR registration, edges defined here...
+RTTR_REGISTRATION
+{
+	FunctorRegistration<InputSystem>("InputSystem");
+}

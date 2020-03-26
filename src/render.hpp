@@ -18,32 +18,33 @@ struct RenderContext
 	std::string mSomething;
 };
 
-class IRenderSubsystem : public ExecutionGraphElement
+class IRenderSubsystem
 {
+	RTTR_ENABLE();
 public:
 	virtual void renderInit(const RenderContext& ctx) = 0;
 	virtual void render(tf::Subflow& sf, float dt, const RenderContext& ctx) = 0;
-
-	void operator()(tf::Subflow& sf, float dt, const RenderContext& ctx) { render(sf, dt, ctx); }
 };
 
-class IBatcherSubsystem : public ExecutionGraphElement
+class IBatcherSubsystem
 {
+	RTTR_ENABLE();
 public:
 	virtual void prepBatch(BatchRenderer& batcher) = 0;
 	virtual void evalBatch(BatchIter begin, BatchIter end) = 0;
-
-	void operator()(BatchRenderer& batcher) { prepBatch(batcher); }
 };
 
 class BatchRenderer : public IRenderSubsystem
 {
+	RTTR_ENABLE(IRenderSubsystem);
 public:
 	template<typename Subsystem>
 	void addSubsystem()
 	{
-		mGraph.add<Subsystem>();
+		mSubsystems.add<Subsystem>();
 	}
+
+	void configure();
 
 	void addBatch(IBatcherSubsystem& subsystem, int key, int data);
 
@@ -51,21 +52,22 @@ public:
 	void render(tf::Subflow& sf, float dt, const RenderContext& ctx) override;
 
 private:
-	ExecutionGraph<IBatcherSubsystem, std::reference_wrapper<BatchRenderer>> mGraph;
+	FunctorList<IBatcherSubsystem> mSubsystems;
+	TaskflowWithArgs<std::reference_wrapper<BatchRenderer>> mGraph;
+	std::mutex mBatchesMutex;
 	std::vector<Batch> mBatches;
 };
 
 class RenderSystem : public ISystem
 {
+	RTTR_ENABLE(ISystem);
 public:
-	using ISystem::ISystem;
+	RenderSystem(SystemManager& mgr);
 
-	// we assume all render subsystems can run in parallel => don't return task, since no dependencies are needed
 	template<typename Subsystem>
 	void add()
 	{
-		auto& subsys = mRenderGraph.add<Subsystem>();
-		mInitGraph.add([&subsys](const RenderContext& ctx) { subsys.renderInit(ctx); });
+		mSubsystems.add<Subsystem>();
 	}
 
 	void configure() override;
@@ -74,10 +76,11 @@ public:
 	template<typename Subsystem>
 	Subsystem* find()
 	{
-		return mRenderGraph.findElementByType<Subsystem>();
+		return mSubsystems.findByType<Subsystem>();
 	}
 
 private:
+	FunctorList<IRenderSubsystem> mSubsystems;
 	TaskflowWithArgs<RenderContext> mInitGraph;
-	ExecutionGraph<IRenderSubsystem, float, RenderContext> mRenderGraph;
+	TaskflowWithArgs<float, RenderContext> mRenderGraph;
 };

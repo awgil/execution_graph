@@ -15,7 +15,7 @@ add_compile_options(
 	/WX							# Enable warnings as errors
 	/Gy							# Enable function level linking
 	/Gw							# Optimize Global Data
-	#/GR-						# Disable Run-Time Type Information
+	/GR-						# Disable Run-Time Type Information
 	/GS-						# Disable Security Check
 	/bigobj						# Increase number of sections in object files
 	/Oi							# Enable intrinsics
@@ -39,6 +39,7 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Sources" FILES ${TAR
 add_executable(execution_graph ${TARGET_SOURCES})
 
 find_package(cpp-taskflow)
-target_link_libraries(execution_graph PRIVATE cpp-taskflow::cpp-taskflow)
+find_package(rttr)
+target_link_libraries(execution_graph PRIVATE cpp-taskflow::cpp-taskflow rttr::rttr)
 
 target_compile_options(execution_graph PRIVATE /wd4201 /wd4267)

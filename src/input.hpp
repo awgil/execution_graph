@@ -5,6 +5,7 @@
 // this is an example of a simple system
 class InputSystem : public ISystem
 {
+	RTTR_ENABLE(ISystem);
 public:
 	using ISystem::ISystem;
 

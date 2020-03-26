@@ -32,3 +32,11 @@ void ModelRenderer::evalBatch(BatchIter begin, BatchIter end)
 	for (auto i = begin; i != end; ++i)
 		printf("- model %d\n", i->data);
 }
+
+RTTR_REGISTRATION
+{
+	FunctorRegistration<ModelSystem>("ModelSystem")
+		.runBefore("RenderSystem");
+
+	FunctorRegistration<ModelRenderer>("ModelRenderer");
+}

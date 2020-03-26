@@ -9,6 +9,8 @@ struct SimA : public ISimulationSubsystem
 	{
 		printf("Simulation A\n");
 	}
+
+	RTTR_ENABLE(ISimulationSubsystem);
 };
 
 struct SimB : public ISimulationSubsystem
@@ -17,6 +19,8 @@ struct SimB : public ISimulationSubsystem
 	{
 		printf("Simulation B\n");
 	}
+
+	RTTR_ENABLE(ISimulationSubsystem);
 };
 
 struct CustomRenderer : public IBatcherSubsystem
@@ -34,31 +38,30 @@ struct CustomRenderer : public IBatcherSubsystem
 	}
 };
 
+RTTR_REGISTRATION
+{
+	FunctorRegistration<SimA>("SimA");
+	FunctorRegistration<SimB>("SimB").runAfer("SimA");
+}
+
 int main()
 {
 	SystemManager sm;
 
 	// TODO: this will be done by world loader, using vector of active system type names
-	auto& inputSystem = sm.add<InputSystem>();
+	sm.add<InputSystem>();
 	auto& simSystem = sm.add<SimulationSystem>();
+	sm.add<ModelSystem>();
 	auto& renderSystem = sm.add<RenderSystem>();
-	auto& modelSystem = sm.add<ModelSystem>();
-
-	// TODO: this will be done by SystemManager::configure using statically-defined edges between systems
-	inputSystem.task().precede(simSystem.task());
-	simSystem.task().precede(renderSystem.task());
-	simSystem.task().precede(modelSystem.task());
-	modelSystem.task().precede(renderSystem.task());
 
 	// TODO: this will be done by SimulationSystem::configure using data in singleton component describing game simulation settings
-	auto& simA = simSystem.add<SimA>();
-	auto& simB = simSystem.add<SimB>();
-	simA.task().precede(simB.task());
-
-	sm.configure();
+	simSystem.add<SimA>();
+	simSystem.add<SimB>();
 
 	// TODO: this will be done by somesystem::configure
 	renderSystem.find<BatchRenderer>()->addSubsystem<CustomRenderer>();
+
+	sm.configure();
 
 	sm.execute(0.1f); // 1 tick + 0.04
 	sm.execute(0.1f); // 2 ticks + 0.02

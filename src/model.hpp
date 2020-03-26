@@ -4,6 +4,7 @@
 
 class ModelSystem : public ISystem
 {
+	RTTR_ENABLE(ISystem);
 public:
 	using ISystem::ISystem;
 	void configure() override;
@@ -12,6 +13,7 @@ public:
 
 class ModelRenderer : public IBatcherSubsystem
 {
+	RTTR_ENABLE(IBatcherSubsystem);
 public:
 	void prepBatch(BatchRenderer& batcher) override;
 	void evalBatch(BatchIter begin, BatchIter end) override;

@@ -2,24 +2,25 @@
 
 #include "system_manager.hpp"
 
-class ISimulationSubsystem : public ExecutionGraphElement
+class ISimulationSubsystem
 {
+	RTTR_ENABLE();
 public:
+	virtual ~ISimulationSubsystem() = default;
 	virtual void simulateFrame() = 0;
-
-	void operator()() { simulateFrame(); }
 };
 
 class SimulationSystem : public ISystem
 {
+	RTTR_ENABLE(ISystem);
 public:
 	using ISystem::ISystem;
 
-	// TODO: should be called inside configure
+	// TODO: should be called inside configure?
 	template<typename Subsystem>
 	Subsystem& add()
 	{
-		return mGraph.add<Subsystem>();
+		return mSubsystems.add<Subsystem>();
 	}
 
 	void configure() override;
@@ -28,5 +29,6 @@ public:
 private:
 	static constexpr float kFrameLength = 0.06f;
 	float mRemaining = 0.f;
-	ExecutionGraph<ISimulationSubsystem> mGraph;
+	FunctorList<ISimulationSubsystem> mSubsystems;
+	TaskflowWithArgs<> mGraph;
 };

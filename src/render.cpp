@@ -1,5 +1,16 @@
 #include "render.hpp"
 
+void BatchRenderer::configure()
+{
+	mSubsystems.buildTaskflow(mGraph, &IBatcherSubsystem::prepBatch);
+}
+
+void BatchRenderer::addBatch(IBatcherSubsystem& subsystem, int key, int data)
+{
+	std::scoped_lock l(mBatchesMutex);
+	mBatches.push_back({ &subsystem, key, data });
+}
+
 void BatchRenderer::renderInit(const RenderContext& ctx)
 {
 	printf("Batcher init: %s\n", ctx.mSomething.c_str());
@@ -32,9 +43,18 @@ void BatchRenderer::render(tf::Subflow& sf, float, const RenderContext&)
 	D.succeed(C);
 }
 
-void RenderSystem::configure()
+RenderSystem::RenderSystem(SystemManager& mgr)
+	: ISystem(mgr)
 {
 	add<BatchRenderer>();
+}
+
+void RenderSystem::configure()
+{
+	mSubsystems.buildTaskflow(mInitGraph, &IRenderSubsystem::renderInit);
+	mSubsystems.buildTaskflow(mRenderGraph, &IRenderSubsystem::render);
+
+	find<BatchRenderer>()->configure();
 }
 
 void RenderSystem::execute(tf::Subflow& sf, float dt)
@@ -44,9 +64,8 @@ void RenderSystem::execute(tf::Subflow& sf, float dt)
 	C.succeed(B);
 }
 
-// TODO: RTTR registration, edges defined here...
-
-void BatchRenderer::addBatch(IBatcherSubsystem& subsystem, int key, int data)
+RTTR_REGISTRATION
 {
-	mBatches.push_back({ &subsystem, key, data });
+	FunctorRegistration<RenderSystem>("RenderSystem");
+	FunctorRegistration<BatchRenderer>("BatchRenderer");
 }

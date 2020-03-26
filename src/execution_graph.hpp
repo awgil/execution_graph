@@ -1,6 +1,8 @@
 #pragma once
 
 #include <taskflow/taskflow.hpp>
+#include <rttr/type>
+#include <rttr/registration>
 #include <tuple>
 
 template<typename T>
@@ -26,6 +28,11 @@ public:
 			static_assert(false, "Unexpected callable signature");
 	}
 
+	void clear()
+	{
+		mTF.clear();
+	}
+
 	template<typename... IArgs>
 	void execute(tf::Executor& executor, IArgs &&... arguments)
 	{
@@ -49,57 +56,100 @@ private:
 	uninit_storage_t<arg_tuple> mArgsStorage;
 };
 
-class ExecutionGraphElement
+template<typename Base>
+class FunctorList
 {
 public:
-	virtual ~ExecutionGraphElement() = default;
+	Base& add(std::unique_ptr<Base>&& func)
+	{
+		mTypeToIndex[rttr::type::get(*func)] = mFunctors.size();
+		return *mFunctors.emplace_back(std::move(func));
+	}
 
-	tf::Task task() const { return mTask; }
+	template<typename Derived, typename... CtorArgs>
+	Derived& add(CtorArgs&&... ctorArgs)
+	{
+		static_assert(std::is_base_of_v<Base, Derived>);
+		return static_cast<Derived&>(add(std::make_unique<Derived>(std::forward<CtorArgs>(ctorArgs)...)));
+	}
+
+	auto& functors() { return mFunctors; }
+
+	template<typename T>
+	T* findByType()
+	{
+		auto i = mTypeToIndex.find(rttr::type::get<T>());
+		return i != mTypeToIndex.end() ? static_cast<T*>(mFunctors[i->second].get()) : nullptr;
+	}
+
+	template<typename... Args, typename... IArgs>
+	std::vector<tf::Task> buildTaskflow(TaskflowWithArgs<Args...> &tf, void (Base::*func)(IArgs...))
+	{
+		std::vector<tf::Task> tasks;
+		tasks.reserve(mFunctors.size());
+
+		tf.clear();
+		for (auto& f : mFunctors)
+		{
+			tasks.push_back(tf.add([&fn = *f, func](IArgs... args) { (fn.*func)(std::forward<IArgs>(args)...); }));
+		}
+
+		auto getExistingEdges = [this](rttr::type t, rttr::string_view metaName) {
+			std::vector<size_t> res;
+			if (auto meta = t.get_metadata(metaName))
+			{
+				for (auto& edge : meta.get_value<std::vector<std::string>>())
+				{
+					rttr::type u = rttr::type::get_by_name(edge);
+					auto iu = mTypeToIndex.find(u);
+					if (iu == mTypeToIndex.end())
+						continue; // skip edge - note that it's not ideal - consider A->B->C with B not added
+					res.push_back(iu->second);
+				}
+			}
+			return res;
+		};
+
+		for (size_t i = 0; i < mFunctors.size(); ++i)
+		{
+			rttr::type t = rttr::type::get(*mFunctors[i]);
+			for (auto j : getExistingEdges(t, "EDGE_RUN_BEFORE"))
+				tasks[i].precede(tasks[j]);
+			for (auto j : getExistingEdges(t, "EDGE_RUN_AFTER"))
+				tasks[i].succeed(tasks[j]);
+		}
+
+		return tasks;
+	}
 
 private:
-	tf::Task mTask;
-
-	template<typename, typename...> friend class ExecutionGraph;
+	std::vector<std::unique_ptr<Base>> mFunctors;
+	std::unordered_map<rttr::type, size_t> mTypeToIndex;
 };
 
-template<typename Base, typename... Args>
-class ExecutionGraph : private TaskflowWithArgs<Args...>
+template<typename T>
+class FunctorRegistration
 {
-	static_assert(std::is_base_of_v<ExecutionGraphElement, Base>);
-
 public:
-	Base& add(std::unique_ptr<Base>&& elem)
+	FunctorRegistration(rttr::string_view name)
+		: mClass(name)
 	{
-		auto& element = *mElements.emplace_back(std::move(elem));
-		element.mTask = TaskflowWithArgs<Args...>::add(std::ref(element));
-		return element;
 	}
 
-	template<typename Element, typename... CtorArgs>
-	Element& add(CtorArgs &&... ctorArgs)
+	template<typename... Strings>
+	FunctorRegistration& runBefore(Strings &&... classes)
 	{
-		static_assert(std::is_base_of_v<Base, Element>);
-		return static_cast<Element&>(add(std::make_unique<Element>(std::forward<CtorArgs>(ctorArgs)...)));
+		mClass(rttr::metadata(rttr::string_view("EDGE_RUN_BEFORE"), std::vector<std::string>{ std::forward<Strings>(classes)... }));
+		return *this;
 	}
 
-	using TaskflowWithArgs<Args...>::execute;
-
-	auto& elements() { return mElements; }
-
-	template<typename Element>
-	Element* findElementByType()
+	template<typename... Strings>
+	FunctorRegistration& runAfer(Strings&&... classes)
 	{
-		// this should of course use RTTR and fast lookups...
-		for (auto& e : mElements)
-		{
-			if (auto* cast = dynamic_cast<Element*>(e.get()))
-			{
-				return cast;
-			}
-		}
-		return nullptr;
+		mClass(rttr::metadata(rttr::string_view("EDGE_RUN_AFTER"), std::vector<std::string>{ std::forward<Strings>(classes)... }));
+		return *this;
 	}
 
 private:
-	std::vector<std::unique_ptr<Base>> mElements;
+	rttr::registration::class_<T> mClass;
 };
