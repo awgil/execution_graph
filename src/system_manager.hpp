@@ -33,9 +33,6 @@ struct System : ISystem
 class SystemManager
 {
 public:
-	// TODO: call by world loader based on list of systems in world
-	// take type name string instead of <Type> and access RTTR db
-	// return nothing and add no dependency edges - this will be done by configure...
 	template<typename System>
 	System& add()
 	{

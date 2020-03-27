@@ -2,6 +2,8 @@
 #include "simulation.hpp"
 #include "render.hpp"
 #include "model.hpp"
+#include "basic_engine.hpp"
+#include "feature.hpp"
 
 struct SimA : public ISimulationSubsystem
 {
@@ -38,28 +40,32 @@ struct CustomRenderer : public IBatcherSubsystem
 	}
 };
 
+struct MyGameFeature : Feature
+{
+	void setup(SystemManager& world) override
+	{
+		auto& simSystem = *world.find<SimulationSystem>();
+		simSystem.add<SimA>();
+		simSystem.add<SimB>();
+
+		world.find<RenderSystem>()->find<BatchRenderer>()->addSubsystem<CustomRenderer>();
+	}
+};
+
 RTTR_REGISTRATION
 {
 	FunctorRegistration<SimA>("SimA");
 	FunctorRegistration<SimB>("SimB").runAfer("SimA");
+	FunctorRegistration<CustomRenderer>("CustomRenderer");
+	FeatureRegistration<MyGameFeature>("MyGameFeature").depends("BasicEngineFeature");
 }
 
 int main()
 {
 	SystemManager sm;
 
-	// TODO: this will be done by world loader, using vector of active system type names
-	sm.add<InputSystem>();
-	auto& simSystem = sm.add<SimulationSystem>();
-	sm.add<ModelSystem>();
-	auto& renderSystem = sm.add<RenderSystem>();
-
-	// TODO: this will be done by SimulationSystem::configure using data in singleton component describing game simulation settings
-	simSystem.add<SimA>();
-	simSystem.add<SimB>();
-
-	// TODO: this will be done by somesystem::configure
-	renderSystem.find<BatchRenderer>()->addSubsystem<CustomRenderer>();
+	// TODO: this will be done by world loader, using vector of enabled features
+	Feature::enableFeatures(sm, { "BasicEngineFeature", "ModelRenderingFeature", "MyGameFeature" });
 
 	sm.configure();
 

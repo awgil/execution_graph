@@ -1,16 +1,5 @@
 #include "model.hpp"
 
-void ModelSystem::configure()
-{
-	auto* renderSystem = mMgr.find<RenderSystem>();
-	assert(renderSystem); // it's an error to add ModelSystem without RenderSystem?..
-	auto* batcher = renderSystem->find<BatchRenderer>();
-	assert(batcher);
-
-	// this is the same style of registration as used currently by corex
-	batcher->addSubsystem<ModelRenderer>();
-}
-
 void ModelSystem::execute(tf::Subflow&, float dt)
 {
 	printf("Updating model transforms, %f passed...\n", dt);
@@ -33,10 +22,18 @@ void ModelRenderer::evalBatch(BatchIter begin, BatchIter end)
 		printf("- model %d\n", i->data);
 }
 
+void ModelRenderingFeature::setup(SystemManager& world)
+{
+	world.add<ModelSystem>();
+	world.find<RenderSystem>()->find<BatchRenderer>()->addSubsystem<ModelRenderer>();
+}
+
 RTTR_REGISTRATION
 {
 	FunctorRegistration<ModelSystem>("ModelSystem")
 		.runBefore("RenderSystem");
 
 	FunctorRegistration<ModelRenderer>("ModelRenderer");
+
+	FeatureRegistration<ModelRenderingFeature>("ModelRenderingFeature").depends("BasicEngineFeature");
 }

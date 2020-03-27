@@ -15,7 +15,6 @@ class SimulationSystem : public System<SimulationSystem>
 public:
 	using System::System;
 
-	// TODO: should be called inside configure?
 	template<typename Subsystem>
 	Subsystem& add()
 	{

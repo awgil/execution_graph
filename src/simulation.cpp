@@ -3,7 +3,6 @@
 void SimulationSystem::configure()
 {
 	printf("Sim configure\n");
-	// TODO: look up singleton component describing simulation settings, use vector of sim subsystem types to add nodes
 	mSubsystems.buildTaskflow(mGraph, &ISimulationSubsystem::simulateFrame);
 }
 

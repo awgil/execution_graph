@@ -21,18 +21,13 @@ add_compile_options(
 	/Oi							# Enable intrinsics
 	#$<$<CONFIG:Debug>:/Ob1>		# Enable only __inline (\Ob1) for Debug Build
 	/fp:fast					# Enable fast floating point arithmetics by default
-	# TODO: /arch:...
 	/permissive-
 )
 
 # Global linker options
-# Flags required by LivePP usage: https://molecular-matters.com/docs/livepp/documentation.html#linker_settings
 add_link_options(
 	/WX				# Enable warnings as errors
-	# TODO: consider /DEBUG:FASTLINK for debug build
 )
-
-# TODO: enable LTCG for release builds
 
 file(GLOB_RECURSE TARGET_SOURCES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" CONFIGURE_DEPENDS "src/*")
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Sources" FILES ${TARGET_SOURCES})
